@@ -80,6 +80,10 @@ function saveForm(e) {
   }
 }
 
+function getInputVal(id) {
+  return document.getElementById(id).value;
+}
+
 // Download the data
 function download(filename, text) {
   var element = document.createElement("a");
@@ -98,18 +102,17 @@ function download(filename, text) {
 }
 
 // Start file download.
-document.getElementById("btnDownload").addEventListener("click", download_file);
+document.getElementById("btnDownload").addEventListener(
+  "click",
+  function(e) {
+    e.preventDefault();
+    // Generate download of hello.txt file with some content
+    var km = $("#in_kilo").text();
+    var text = document.getElementById(km);
+    var filename = "data.txt";
 
-function download_file(e) {
-  e.preventDefault();
-  // Generate download of hello.txt file with some content
-  var km = $("#in_kilo").text();
-  var text = document.getElementById(km);
-  var filename = "data.txt";
-
-  download(filename, text);
-}
-
-function getInputVal(id) {
-  return document.getElementById(id).value;
-}
+    download(filename, text);
+    document.getElementById("distance_form").reset();
+  },
+  false
+);
