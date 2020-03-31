@@ -1,0 +1,326 @@
+<html>
+
+<head>
+  <title>Otonom Araç Yönetim Sistemi</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <!--Download ajax library automatically-->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--Google maps places api-->
+  <script defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAv8PJim5lA5d2A6fRulLQ0exUUXsuFV7E&libraries=places"
+    type="text/javascript"></script>
+  <!--Google maps geocode api for getting latitude and longitude-->
+  <script>
+    "https://maps.googleapis.com/maps/api/geocode/json";
+
+
+  </script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <link href="//netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" id="bootstrap-css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<!--Frontend part, interface-->
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="jumbotron">
+        <h1>Otonom Araç Yönetim Sistemi</h1>
+        <h2>Uludağ Üniversitesi Endüstri Mühendisliği Bölümü</h2>
+      </div>
+      <div class="alert">İstek kaydedildi!</div>
+
+      <div class="col-md-6">
+        <form id="distance_form">
+          <div class="form-group">
+            <label>Origin: </label>
+            <input class="form-control" id="from_places" placeholder="Enter a location" />
+            <input id="origin" name="origin" required="" type="hidden" />
+          </div>
+
+          <div class="form-group">
+            <label>Destination: </label>
+            <input class="form-control" id="to_places" placeholder="Enter a location" />
+            <input id="destination" name="destination" required="" type="hidden" />
+          </div>
+          <b>Parks </b>
+    <select id="park">
+      <option value="40.212285, 28.941593">Park Station 1 (Küçük Sanayi)</option>
+      <option value="40.197282, 29.051440">Park Station 2 (Merinos)</option>
+      <option value="40.196946, 29.167325">Park Station 3 (Otosansit) </option>
+    </select>
+    
+          <div class="form-group">
+            <label>Pick up earliest: </label>
+            <input type="time" name="earliest" id="earliest" value="12:00" /><span>
+              <label>Pick up latest: </label>
+              <input type="time" name="latest" id="latest" value="12:00" />
+          </div>
+          <input class="btn btn-primary" type="submit" value="Calculate" />
+        </form>
+
+        <div id="result">
+          <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Distance in km:
+              <span id="in_kilo" class="badge badge-primary badge-pill"></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Minute in text:
+              <span id="duration_text" class="badge badge-primary badge-pill"></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Seconds:
+              <span id="duration_value" class="badge badge-primary badge-pill"></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              FROM:
+              <span id="from" class="badge badge-primary badge-pill"></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              From Lat - Lng:
+              <span id="fromlatlng" class="badge badge-primary badge-pill"></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              TO:
+              <span id="to" class="badge badge-primary badge-pill"></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              To Lat - Lng:
+              <span id="tolatlng" class="badge badge-primary badge-pill"></span>
+            </li>
+          </ul>
+          <input class="btn btn-primary" id="save" type="submit" value="Save" />
+        </div>
+        <input class="btn btn-primary" id="btnDownload" type="button" value="Download" />
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <script>
+
+
+    var result = {};
+
+    function getCoordinates() {
+
+      var fromPromise = geocode(document.getElementById("from_places").value).then(function (response) {
+        $("#fromlatlng").text(response);
+        result.fromCoordinate = response;
+      });
+
+      var toPromise = geocode(document.getElementById("to_places").value).then(function (response) {
+        $("#tolatlng").text(response);
+        result.toCoordinate = response;
+      });
+
+      return Promise.all([fromPromise, toPromise]);
+    };
+
+    function geocode(location) {
+      var promise = new Promise((resolve, reject) => {
+        axios
+          .get("https://maps.googleapis.com/maps/api/geocode/json", {
+            params: {
+              address: { location },
+              key: "AIzaSyAv8PJim5lA5d2A6fRulLQ0exUUXsuFV7E"
+            }
+          })
+          .then(function (response) {
+            console.log(response);
+
+            var latF = response.data.results[0].geometry.location.lat.toFixed(4);
+            var lngF = response.data.results[0].geometry.location.lng.toFixed(4);
+
+            resolve(latF + " " + lngF);
+          })
+          .catch(function (error) {
+            reject(error);
+          });
+      });
+
+      return promise;
+    };
+
+
+    $(document).ready(function () {
+      // add input listeners
+      //google.maps.event.addDomListener(window, "load", function() {
+      var from_places;
+      from_places = new google.maps.places.Autocomplete(
+        document.getElementById("from_places")
+        //{
+        //types: ["geocode"]
+        //}
+      );
+      var to_places = new google.maps.places.Autocomplete(
+        document.getElementById("to_places")
+        //{
+        //types: ["geocode"]
+        //}
+      );
+
+      google.maps.event.addListener(from_places, "place_changed", function () {
+        var from_place = from_places.getPlace();
+        var from_address = from_place.formatted_address;
+        $("#origin").val(from_address);
+      });
+
+      google.maps.event.addListener(to_places, "place_changed", function () {
+        var to_place = to_places.getPlace();
+        var to_address = to_place.formatted_address;
+        $("#destination").val(to_address);
+      });
+    });
+
+    // calculate distance
+    function calculateDistance() {
+
+      var promise = new Promise((resolve, reject) => {
+
+        var origin = $("#origin").val();
+        var destination = $("#destination").val();
+        var park1 = { lat: 40.212285, lng: 28.941593 };
+        var park2 = { lat: 40.197282, lng: 29.051440 };
+        var park3 = { lat: 40.196946, lng: 29.167325 };
+        var service = new google.maps.DistanceMatrixService();
+        service.getDistanceMatrix(
+          {
+            origins: [origin],
+            destinations: [destination],
+            //parks: [park1, park2, park3],
+            travelMode: google.maps.TravelMode.DRIVING,
+            //unitSystem: google.maps.UnitSystem.IMPERIAL, // miles and feet.
+            unitSystem: google.maps.UnitSystem.metric, // kilometers and meters.
+            avoidHighways: false,
+            avoidTolls: false
+          },
+          function (response, status) {
+            calculateDistanceCallback(response, status);
+            resolve();
+          }
+        );
+
+      });
+
+      return promise;
+
+    }
+
+    // get distance results
+    function calculateDistanceCallback(response, status) {
+      if (status != google.maps.DistanceMatrixStatus.OK) {
+        $("#result").html(err);
+      } else {
+        var origin = response.originAddresses[0];
+        var destination = response.destinationAddresses[0];
+        if (response.rows[0].elements[0].status === "ZERO_RESULTS") {
+          $("#result").html(
+            "Better get on a plane. There are no roads between " +
+            origin +
+            " and " +
+            destination
+          );
+        } else {
+          var distance = response.rows[0].elements[0].distance;
+          var duration = response.rows[0].elements[0].duration;
+          //console.log(response.rows[0].elements[0].distance);
+          //console.log(response.rows[0].elements[0].duration);
+          var distance_in_kilo = distance.value / 1000; // the kilom
+          //var distance_in_mile = distance.value / 1609.34; // the mile
+          var duration_text = duration.text;
+          var duration_value = duration.value;
+          //$("#in_mile").text(distance_in_mile.toFixed(2));
+
+          $("#in_kilo").text(distance_in_kilo.toFixed(2));
+          result.distance = distance_in_kilo.toFixed(2);
+
+          $("#duration_text").text(duration_text);
+          result.duration = duration_text;
+
+          $("#duration_value").text(duration_value);
+          result.durationInSeconds = duration_value;
+
+          $("#from").text(origin);
+          result.from = origin;
+
+          $("#to").text(destination);
+          result.to = destination;
+        }
+      }
+    }
+
+    // print results on submit the form
+    $("#distance_form").submit(function (e) {
+      e.preventDefault();
+
+      result = {};
+
+      var calculateDistancePromise = calculateDistance();
+      var getCoordinatesPromise = getCoordinates();
+
+      Promise.all([calculateDistancePromise, getCoordinatesPromise]).then(function () {
+        //save now
+      });
+
+    });
+
+    // Download the data
+    function download(filename, text) {
+      var element = document.createElement("a");
+      element.setAttribute(
+        "href",
+        "data:text/plain;charset=utf-8," + encodeURIComponent(text)
+      );
+      element.setAttribute("download", filename);
+
+      element.style.display = "none";
+      document.body.appendChild(element);
+
+      element.click();
+
+      document.body.removeChild(element);
+    }
+
+    // Start file download.
+    document.getElementById("btnDownload").addEventListener(
+      "click",
+      function (e) {
+        e.preventDefault();
+
+        result = {};
+
+        var calculateDistancePromise = calculateDistance();
+        var getCoordinatesPromise = getCoordinates();
+
+        Promise.all([calculateDistancePromise, getCoordinatesPromise]).then(function () {
+          download("data.txt", getFileContent());
+          document.getElementById("distance_form").reset();
+        });
+
+      },
+      false
+    );
+
+
+    function getFileContent() {      
+
+      var text = result.distance;
+
+       return text;
+    };
+
+  </script>
+  <!--Download different firebase feature main configurations -->
+  <script src="https://www.gstatic.com/firebasejs/7.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.7.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.7.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.7.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.7.0/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.7.0/firebase-messaging.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.7.0/firebase-functions.js"></script>
+  <!--Call javascript file -->
+  <script src="main.js"></script>
+</body>
+
+</html>
